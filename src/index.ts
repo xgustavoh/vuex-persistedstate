@@ -112,12 +112,9 @@ export default function <State>(
     }
 
     if (options.syncLocalStorage) {
-      console.log("Add event storage!")
       window.addEventListener('storage', (event) => {
-        console.log(event);
         if(event && event.storageArea === localStorage && event.key === options.key) {
-          const newData = fetchSavedState()
-          replaceState(store, newData);
+          replaceState(store, fetchSavedState());
         }
       })
     }
