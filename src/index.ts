@@ -23,6 +23,7 @@ interface Options<State> {
   rehydrated?: (store: Store<State>) => void;
   fetchBeforeUse?: boolean;
   overwrite?: boolean;
+  syncLocalStorage?: boolean;
   assertStorage?: (storage: Storage) => void | Error;
 }
 
@@ -68,6 +69,21 @@ export default function <State>(
     };
   }
 
+  function replaceState(store: Store<State>, savedState: any) {
+    store.replaceState(
+      options.overwrite
+        ? savedState
+        : merge(store.state, savedState, {
+            arrayMerge:
+              options.arrayMerger ||
+              function (store, saved) {
+                return saved;
+              },
+            clone: false,
+          })
+    );
+  }
+
   const assertStorage =
     options.assertStorage ||
     (() => {
@@ -91,19 +107,19 @@ export default function <State>(
     }
 
     if (typeof savedState === "object" && savedState !== null) {
-      store.replaceState(
-        options.overwrite
-          ? savedState
-          : merge(store.state, savedState, {
-              arrayMerge:
-                options.arrayMerger ||
-                function (store, saved) {
-                  return saved;
-                },
-              clone: false,
-            })
-      );
+      replaceState(store, savedState);
       (options.rehydrated || function () {})(store);
+    }
+
+    if (options.syncLocalStorage) {
+      console.log("Add event storage!")
+      window.addEventListener('storage', (event) => {
+        console.log(event);
+        if(event && event.storageArea === localStorage && event.key === options.key) {
+          const newData = fetchSavedState()
+          replaceState(store, newData);
+        }
+      })
     }
 
     (options.subscriber || subscriber)(store)(function (mutation, state) {
