@@ -21,6 +21,7 @@ interface Options<State> {
   filter?: (mutation: MutationPayload) => boolean;
   arrayMerger?: (state: any[], saved: any[]) => any;
   rehydrated?: (store: Store<State>) => void;
+  synced?: (store: Store<State>) => void;
   fetchBeforeUse?: boolean;
   overwrite?: boolean;
   syncLocalStorage?: boolean;
@@ -115,6 +116,7 @@ export default function <State>(
       window.addEventListener('storage', (event) => {
         if(event && event.storageArea === localStorage && event.key === options.key) {
           replaceState(store, fetchSavedState());
+          (options.synced || function () {})(store);
         }
       })
     }
